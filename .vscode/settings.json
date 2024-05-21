@@ -58,6 +58,8 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "*.php": "php",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "stdlib.h": "c",
+    "stdint.h": "c"
   }
 }
