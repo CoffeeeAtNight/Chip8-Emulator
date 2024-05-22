@@ -3,19 +3,20 @@
 #include <stdint.h>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
 
 typedef struct
 {
-  uint8_t memory[4096]; // Memory of Chip8
-  uint8_t V[16];        // General purpose registers
-  uint16_t I;           // Index register
-  uint16_t pc;          // Program counter
-  uint8_t gfx[64 * 32]; // Display
-  uint8_t keypad[16];   // Keypad state
-  uint16_t stack[16];   // Stack in Chip8
-  uint8_t sp;           // Stack pointer
-  uint8_t delay_timer;  // Delay timer
-  uint8_t sound_timer;  // Sound timer
+  uint8_t memory[4096];     // Memory of Chip8
+  uint8_t V[16];            // General purpose registers
+  uint16_t I;               // Index register
+  uint16_t pc;              // Program counter
+  uint8_t display[64 * 32]; // Display
+  uint8_t keypad[16];       // Keypad state
+  uint16_t stack[16];       // Stack in Chip8
+  uint8_t sp;               // Stack pointer
+  uint8_t delay_timer;      // Delay timer
+  uint8_t sound_timer;      // Sound timer
 } Chip8;
 
 void initialize(Chip8 *chip8);
@@ -25,8 +26,9 @@ void clearScreen(Chip8 *chip8);
 void push(Chip8 *chip8, uint16_t value);
 uint16_t pop(Chip8 *chip8);
 void updateTimers(Chip8 *chip8);
+void logOpcode();
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
   Chip8 chip8;
   initialize(&chip8);
@@ -36,6 +38,12 @@ int main(int argc, char **argv)
     printf("Usage: %s <ROM file>\n", argv[0]);
     return 1;
   }
+
+  loadROM(&chip8, argv[1]);
+  // for (size_t i = 0; i < 10; i++)
+  // {
+  //   emulateCycle(&chip8); // DEBUG
+  // }
 
   while (1)
   {
@@ -55,11 +63,36 @@ void initialize(Chip8 *chip8)
   memset(chip8->V, 0, 16);
   memset(chip8->stack, 0, 16);
   memset(chip8->keypad, 0, 16);
-  memset(chip8->stack, 0, 64*32);
+  memset(chip8->display, 0, 64 * 32);
 }
 
 void loadROM(Chip8 *chip8, const char *filename)
 {
+  // Open a file stream from the ROM
+  FILE *pRom = fopen(filename, "rb");
+  if (pRom == NULL)
+  {
+    fputs("Error occurred reading rom", stdout);
+    exit(-1);
+  }
+
+  // Get the file size
+  fseek(pRom, 0, SEEK_END);
+  long romSize = ftell(pRom);
+  rewind(pRom);
+
+  printf("Filesize: %d\n", (int)romSize);
+
+  // Read ROM data into chip8 memory at offset 0x200
+  size_t bytesRead = fread(&chip8->memory[0x200], 1, 4096 - 0x200, pRom);
+  if (bytesRead != romSize)
+  {
+    perror("Failed to read ROM");
+    fclose(pRom);
+    exit(-1);
+  }
+
+  fclose(pRom);
 }
 
 void emulateCycle(Chip8 *chip8)
@@ -69,6 +102,8 @@ void emulateCycle(Chip8 *chip8)
   chip8->pc += 2;
 
   // Decode opcode
+  printf("%04X ", opcode);
+  logOpcode(opcode);
 
   // Execute opcode
 }
@@ -88,4 +123,28 @@ uint16_t pop(Chip8 *chip8)
 
 void updateTimers(Chip8 *chip8)
 {
+}
+
+void logOpcode(uint16_t opcode)
+{
+  const char *fileName = "./roms/ibm-logo/log/opcode_list";
+  FILE *pLog;
+  if (access(fileName, F_OK) != 0)
+  {
+    pLog = fopen(fileName, "w");
+    if (pLog == NULL)
+    {
+      fputs("Error occurred creating opcode log", stdout);
+      exit(-1);
+    }
+
+    return;
+  }
+
+  FILE *pRom = fopen(fileName, "a");
+  if (pRom == NULL)
+  {
+    fputs("Error occurred creating opcode log", stdout);
+    exit(-1);
+  }
 }
