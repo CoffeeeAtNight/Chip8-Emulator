@@ -4,6 +4,7 @@
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
+#include <SFML/Graphics.h>
 
 typedef struct
 {
@@ -17,16 +18,18 @@ typedef struct
   uint8_t sp;               // Stack pointer
   uint8_t delay_timer;      // Delay timer
   uint8_t sound_timer;      // Sound timer
+  uint8_t current_opcode;   // Opcode currently in use
 } Chip8;
 
 void initialize(Chip8 *chip8);
 void loadROM(Chip8 *chip8, const char *filename);
 void emulateCycle(Chip8 *chip8);
+uint8_t fetchOpcode(Chip8 *chip8);
+void execute_instruction(Chip8 *chip8, uint8_t);
 void clearScreen(Chip8 *chip8);
 void push(Chip8 *chip8, uint16_t value);
 uint16_t pop(Chip8 *chip8);
 void updateTimers(Chip8 *chip8);
-void logOpcode();
 
 int main(int argc, char *argv[])
 {
@@ -98,14 +101,48 @@ void loadROM(Chip8 *chip8, const char *filename)
 void emulateCycle(Chip8 *chip8)
 {
   // Fetch opcode
-  uint16_t opcode = chip8->memory[chip8->pc] << 8 | chip8->memory[chip8->pc + 1];
+  uint8_t opcode = fetchOpcode(chip8);
+
+  // Decode & execute instruction
+  execute_instruction(chip8, opcode);
+}
+
+uint8_t fetchOpcode(Chip8 *chip8)
+{
+  uint8_t opcode = chip8->memory[chip8->pc] << 8 | chip8->memory[chip8->pc + 1];
   chip8->pc += 2;
+  return opcode;
+}
 
-  // Decode opcode
-  printf("%04X ", opcode);
-  logOpcode(opcode);
+void execute_instruction(Chip8 *chip8, uint8_t opcode)
+{
 
-  // Execute opcode
+  switch (opcode & 0xF000)
+  {
+    case 0x0000:
+      switch (opcode & 0x00FF)
+      {
+        case 0x00E0:
+          printf("Instruction Clear screen (00E0)\n");
+          clear_display();
+          break;
+
+        case 0x00EE:
+          printf("Instruction Return from Subroutine (00EE)\n");
+          //return_from_subroutine(chip8);
+          break;
+
+        default:
+          printf("ERROR: Unrecognized opcode 0x%X\n", opcode);
+          exit(EXIT_FAILURE);
+      }
+    break;
+
+    // case 0x00E0:
+    //   printf("Instruction Jump (1NNN)\n");
+    //   clear_display(chip8);
+    //   break;
+  }
 }
 
 void clearScreen(Chip8 *chip8)

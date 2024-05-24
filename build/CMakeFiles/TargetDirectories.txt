@@ -1,0 +1,3 @@
+/home/aki/dev/Chip8-Emulator/build/CMakeFiles/Chip8.dir
+/home/aki/dev/Chip8-Emulator/build/CMakeFiles/edit_cache.dir
+/home/aki/dev/Chip8-Emulator/build/CMakeFiles/rebuild_cache.dir
